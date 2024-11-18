@@ -7,3 +7,68 @@
 body {
   font-family: 'Inter', sans-serif;
 }
+
+.grid-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(255, 140, 0, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 140, 0, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 20s linear infinite;
+  opacity: 0.3;
+}
+
+.grid-animation::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at center,
+    transparent 0%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
+}
+
+@keyframes gridMove {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(50px) rotate(1deg);
+  }
+}
+
+/* Add some floating particles */
+.particle {
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  background-color: #FF9900;
+  border-radius: 50%;
+  animation: float 6s infinite;
+  box-shadow: inset -2px -2px 4px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.particle::before {
+  content: '₿';
+  color: rgba(0, 0, 0, 0.5);
+  font-size: 15px;
+  font-weight: bold;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px) rotate(180deg);
+  }
+}

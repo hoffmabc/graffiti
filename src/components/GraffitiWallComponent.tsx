@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { RpcConnection, MessageUtil, PubkeyUtil, Instruction, Message } from '@saturnbtcio/arch-sdk';
-import { Copy, Check, AlertCircle } from 'lucide-react';
+import { Copy, Check, AlertCircle, Globe, Github, Network } from 'lucide-react';
 import { Buffer } from 'buffer';
 import { useWallet } from '../hooks/useWallet';
 import * as borsh from 'borsh';
+import AnimatedBackground from './AnimatedBackground';
+
 
 // Configure global Buffer for browser environment
 window.Buffer = Buffer;
 
 // Environment variables for configuration
-const client = new RpcConnection((import.meta as any).env.VITE_RPC_URL || 'http://localhost:9002');
+const client = new RpcConnection((import.meta as any).env.VITE_RPC_URL || '/api');
 const PROGRAM_PUBKEY = (import.meta as any).env.VITE_PROGRAM_PUBKEY;
 const WALL_ACCOUNT_PUBKEY = (import.meta as any).env.VITE_WALL_ACCOUNT_PUBKEY;
 
@@ -54,7 +56,10 @@ class GraffitiWall {
 
 
 
-const GraffitiWallComponent: React.FC = () => {
+const GraffitiWallComponent = () => {
+
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+
   // State management
   const wallet = useWallet();
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +72,10 @@ const GraffitiWallComponent: React.FC = () => {
   const [name, setName] = useState('');
   const [isFormValid, setIsFormValid] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const addDebugLog = (message: string) => {
+    setDebugInfo(prev => [...prev.slice(-4), message]); // Keep last 5 messages
+  };
 
   // Convert account pubkey once
   const accountPubkey = PubkeyUtil.fromHex(WALL_ACCOUNT_PUBKEY);
@@ -317,25 +326,76 @@ const GraffitiWallComponent: React.FC = () => {
 
 
   return (
-  <div className="bg-gradient-to-br from-arch-gray to-gray-900 p-8 rounded-lg shadow-lg max-w-4xl mx-auto">
-      <h2 className="text-3xl font-bold mb-6 text-center text-arch-white">Graffiti Wall</h2>
-      
-      
-        {!wallet.isConnected ? (
+    <>
+    <AnimatedBackground />
+    <div className="min-h-screen relative">      
+    
+      <div className="bg-gradient-to-br from-arch-gray/90 to-gray-900/90 backdrop-blur-sm p-8 rounded-lg shadow-lg max-w-4xl mx-auto relative z-10">
+        <h2 className="text-3xl font-bold mb-6 text-center text-arch-white">Graffiti Wall</h2>
+
+        <div className="mb-4 p-4 bg-arch-black rounded-lg hidden">
+        <h4 className="text-arch-orange font-bold mb-2">Debug Info:</h4>
+        <div className="text-arch-white text-sm font-mono">
+          <p>Wallet Connected: {String(wallet.isConnected)}</p>
+          <p>Public Key: {wallet.publicKey || 'none'}</p>
+          <p>Address: {wallet.address || 'none'}</p>
+          {debugInfo.map((log, i) => (
+            <p key={i} className="text-xs">{log}</p>
+          ))}
+        </div>
+
+      </div>
+
+      {!wallet.isConnected ? (
+        <div className="space-y-4 mb-4">
+          <div className="flex items-center justify-center space-x-4 bg-arch-black p-4 rounded-lg">
+            <img src="/xverse.png" alt="Xverse Wallet" className="h-6" />
+            <p className="text-arch-white text-sm">
+              Compatible with Xverse Wallet in <span className="text-arch-orange font-semibold">Testnet mode</span>
+            </p>
+          </div>
           <button
-            onClick={wallet.connect}
+            onClick={async () => {
+              try {
+                addDebugLog('Attempting wallet connection...');
+                await wallet.connect();
+                addDebugLog('Wallet connected successfully');
+              } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                addDebugLog(`Connection error: ${errorMessage}`);
+                setError(`Failed to connect: ${errorMessage}`);
+              }
+            }}
             className="w-full mb-4 bg-arch-orange text-arch-black font-bold py-2 px-4 rounded-lg hover:bg-arch-white transition duration-300"
           >
             Connect Wallet
           </button>
-        ) : (
+          {error && (
+            <div className="mt-6 p-4 bg-red-500 text-white rounded-lg">
+              <div className="flex items-center mb-2">
+                <AlertCircle className="w-6 h-6 mr-2" />
+                <p className="font-bold">Program Error</p>
+              </div>
+              <p>{error}</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="mb-4 space-y-2">
           <button
             onClick={wallet.disconnect}
-            className="w-full mb-4 bg-gray-600 text-arch-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300"
+            className="w-full bg-gray-600 text-arch-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300"
           >
             Disconnect Wallet
           </button>
-        )}
+          <div className="bg-arch-black p-3 rounded-lg">
+            <p className="text-arch-white text-sm">
+              <span className="text-arch-orange font-semibold">Connected Address:</span>{' '}
+              <span className="font-mono break-all">{wallet.address || wallet.publicKey}</span>
+            </p>
+          </div>
+        </div>
+      )}
       
 
       {!isAccountCreated ? (
@@ -409,17 +469,34 @@ const GraffitiWallComponent: React.FC = () => {
           </div>
         </div>
       )}
-      
-      {error && (
-        <div className="mt-6 p-4 bg-red-500 text-white rounded-lg">
-          <div className="flex items-center mb-2">
-            <AlertCircle className="w-6 h-6 mr-2" />
-            <p className="font-bold">Program Error</p>
-          </div>
-          <p>{error}</p>
+
+      <div className="mt-8 pt-4 border-t border-arch-gray">
+        <div className="flex justify-center space-x-8 text-sm text-arch-white">
+          <span className="flex items-center">
+            © <a 
+              href="https://www.arch.network/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-arch-orange transition duration-300 mx-1 font-bold"
+            >
+              Arch Network
+            </a> 2024 | All rights reserved
+          </span>
+          <a 
+            href="https://github.com/Arch-Network" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center hover:text-arch-orange transition duration-300"
+          >
+            <Github className="w-4 h-4 mr-2" />
+            Developers
+          </a>
         </div>
-      )}
+      </div>
     </div>
+  </div>
+  </>
   );
 };
+
 export default GraffitiWallComponent;
