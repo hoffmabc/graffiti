@@ -142,7 +142,7 @@ const GraffitiWallComponent = () => {
         }
         const wallData = userAccount.data;
         
-        console.log(`Wall data: ${wallData}`);
+        console.debug(`Wall data: ${wallData}`);
 
         // If data is empty or invalid length, just set empty messages without error
         if (!wallData || wallData.length < 4) {
