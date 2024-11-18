@@ -8,75 +8,138 @@ interface WalletState {
   publicKey: string | null;
   privateKey: string | null;
   address: string | null;
+  walletType: string | null;
 }
 
 export function useWallet() {
-    const NETWORK = import.meta.env.VITE_NETWORK || 'regtest';
-    const [state, setState] = useState<WalletState>(() => {
-      // Initialize from localStorage
-      const savedState = localStorage.getItem('walletState');
-      if (savedState) {
-        const parsed = JSON.parse(savedState);
-        return {
-          isConnected: parsed.isConnected,
-          publicKey: parsed.publicKey,
-          privateKey: parsed.privateKey,
-          address: parsed.address,
-        };
-      }
+  const NETWORK = import.meta.env.VITE_NETWORK || 'regtest';
+  const [state, setState] = useState<WalletState>(() => {
+    const savedState = localStorage.getItem('walletState');
+    if (savedState) {
+      const parsed = JSON.parse(savedState);
       return {
+        isConnected: parsed.isConnected,
+        publicKey: parsed.publicKey,
+        privateKey: parsed.privateKey,
+        address: parsed.address,
+        walletType: parsed.walletType,
+      };
+    }
+    return {
+      isConnected: false,
+      publicKey: null,
+      privateKey: null,
+      address: null,
+      walletType: null,
+    };
+  });
+  
+  const connectRegtest = async () => {
+    const privateKey = generatePrivateKey();
+    const publicKey = generatePubkeyFromPrivateKey(privateKey);
+    
+    const newState = {
+      isConnected: true,
+      privateKey,
+      publicKey: publicKey.toString(),
+      address: null,
+      walletType: 'regtest',
+    };
+    setState(newState);
+    localStorage.setItem('walletState', JSON.stringify(newState));
+  };
+  
+  const connect = async () => {
+    if (NETWORK === 'development') {
+      await connectRegtest();
+      return;
+    }
+  
+    try {
+      // Check if we're on mobile
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      // Check for Xverse browser and wallet
+      const isXverseBrowser = !!(window as any).XverseProviders.BitcoinProvider || !!(window as any).XverseProviders;
+      const hasXverseWallet = !!(window as any).XverseProviders.BitcoinProvider?.request;
+  
+      if (isMobile && !isXverseBrowser) {
+        if (window.confirm('You will be redirected to Xverse wallet to continue. Press OK to proceed.')) {
+          const currentUrl = encodeURIComponent(window.location.href);
+          window.location.href = `https://connect.xverse.app/browser?url=${currentUrl}`;
+          
+          // Fallback to custom URL scheme
+          setTimeout(() => {
+            window.location.href = `xverse://browser?url=${currentUrl}`;
+          }, 1000);
+        }
+        return;
+      }
+  
+      if (!hasXverseWallet) {
+        const error = new Error('Xverse wallet is not installed. Please install Xverse wallet to continue.');
+        error.name = 'WalletNotFoundError';
+        throw error;
+      }
+
+      const res = await request('wallet_connect', {
+        message: 'Graffiti Wall wants to know your addresses!',
+        addresses: [AddressPurpose.Payment, AddressPurpose.Ordinals],
+      });
+  
+      const addressResponse = await (window as any).XverseProviders.BitcoinProvider.request('getAddresses', {
+        purposes: [AddressPurpose.Ordinals],
+        message: 'Connect to Graffiti Wall',
+      });
+
+      if (addressResponse?.error) {
+        throw new Error(addressResponse.error.message || 'Failed to get addresses from wallet');
+      }
+      
+      if (!addressResponse?.result?.addresses?.[0]) {
+        throw new Error('No addresses returned from wallet');
+      }
+  
+      const ordinalsAddress = addressResponse.result.addresses.find(
+        addr => addr.purpose === AddressPurpose.Ordinals
+      );
+  
+      if (!ordinalsAddress) {
+        throw new Error('No ordinals address returned');
+      }
+  
+      const newState = {
+        isConnected: true,
+        address: ordinalsAddress.address,
+        publicKey: ordinalsAddress.publicKey,
+        privateKey: null,
+        walletType: ordinalsAddress.walletType || 'software',
+      };
+  
+      setState(newState);
+      localStorage.setItem('walletState', JSON.stringify(newState));
+    } catch (error) {
+      console.error('Error connecting wallet:', error);
+      
+      // Clear any existing state
+      setState({
         isConnected: false,
         publicKey: null,
         privateKey: null,
         address: null,
-      };
-    });
+        walletType: null,
+      });
+      localStorage.removeItem('walletState');
   
-    const connectRegtest = async () => {
-      const privateKey = generatePrivateKey();
-      const publicKey = generatePubkeyFromPrivateKey(privateKey);
-      
-      const newState = {
-        isConnected: true,
-        privateKey,
-        publicKey: publicKey.toString(),
-        address: null,
-      };
-      setState(newState);
-      localStorage.setItem('walletState', JSON.stringify(newState));
-    };
-  
-    const connectWallet = async () => {    
-      try {
-        const result = await request('getAddresses', {
-          purposes: [AddressPurpose.Ordinals],
-          message: 'Connect to Graffiti Wall',
-        });
-        console.log(`Addresses: ${JSON.stringify(result.result.addresses)}`);
-  
-        if (result.result.addresses && result.result.addresses.length > 0) {
-          const newState = {
-            isConnected: true,
-            address: result.result.addresses[0].address,
-            publicKey: result.result.addresses[0].publicKey,
-            privateKey: null,
-          };
-          setState(newState);
-          localStorage.setItem('walletState', JSON.stringify(newState));
+      // Rethrow with more specific error message
+      if (error instanceof Error) {
+        if (error.name === 'WalletNotFoundError') {
+          throw new Error('Please install Xverse wallet to continue. Visit https://www.xverse.app/download');
         }
-      } catch (error) {
-        console.error('Error connecting wallet:', error);
-        throw error;
+        throw new Error(`Wallet connection failed: ${error.message}`);
       }
-    };
-
-    const connect = async () => {
-      if (NETWORK === 'deveopment') {
-        await connectRegtest();
-      } else {
-        await connectWallet();
-      }
-    };
+      throw error;
+    }
+  };
   
     const disconnect = () => {
       localStorage.removeItem('walletState');
@@ -85,6 +148,7 @@ export function useWallet() {
         publicKey: null,
         privateKey: null,
         address: null,
+        walletType: null,
       });
     };
 
