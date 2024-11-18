@@ -167,7 +167,7 @@ const TransactionHistoryPage: React.FC = () => {
   return (
 <>
     <AnimatedBackground />
-    <div className="p-4 max-w-7xl mx-auto text-arch-white">
+    <div className="relative z-10 p-4 max-w-7xl mx-auto text-arch-white">
       <div className="flex flex-col md:flex-row gap-8">
         {/* Network Stats */}
         <div className="w-full md:w-1/4">
