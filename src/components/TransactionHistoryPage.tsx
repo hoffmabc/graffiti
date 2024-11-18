@@ -4,6 +4,7 @@ import SearchBar from './SearchBar';
 import BlockList from './BlockList';
 import ErrorMessage from './ErrorMessage';
 import { useNavigate } from 'react-router-dom';
+import AnimatedBackground from './AnimatedBackground';
 
 const INDEXER_API_URL =  (import.meta as any).env.VITE_INDEXER_API_URL || 'http://localhost:3003/api';
 const SYNC_THRESHOLD = 90;
@@ -166,6 +167,8 @@ const TransactionHistoryPage: React.FC = () => {
   }
 
   return (
+<>
+    <AnimatedBackground />
     <div className="p-4 max-w-7xl mx-auto text-arch-white">
       <div className="flex flex-col md:flex-row gap-8">
         {/* Network Stats */}
@@ -288,6 +291,7 @@ const TransactionHistoryPage: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
