@@ -15,7 +15,7 @@ const Particles = () => {
 
 const AnimatedBackground = () => {
   return (
-    <div className="fixed top-0 left-0 w-full h-full -z-10">
+    <div className="fixed top-0 left-0 w-full h-full z-0">
       <div className="absolute inset-0 bg-gradient-to-br from-black via-gray-900 to-black">
         <div className="grid-animation"></div>
         <Particles />

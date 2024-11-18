@@ -9,8 +9,8 @@ import SearchResultPage from './components/SearchResultPage';
 const App: React.FC = () => {
   return (
     <Router>
-      <div className="min-h-screen text-arch-white">
-        <nav className="bg-arch-gray shadow-md p-4">
+      <div className="min-h-screen text-arch-white bg-arch-black">
+        <nav className="bg-arch-gray shadow-md p-4 relative z-10">
           <div className="container mx-auto flex justify-between items-center">
             <img src="/arch_logo.svg" alt="Arch Network" className="h-8" />
             <ul className="flex space-x-4">

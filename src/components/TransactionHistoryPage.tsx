@@ -10,8 +10,6 @@ const INDEXER_API_URL =  (import.meta as any).env.VITE_INDEXER_API_URL || 'http:
 const SYNC_THRESHOLD = 90;
 const BLOCKS_PER_PAGE = parseInt((import.meta as any).env.VITE_BLOCKS_PER_PAGE || '20', 10);
 
-console.log(`${INDEXER_API_URL}`);
-
 interface BlockData {
   height: number;
   hash: string;
